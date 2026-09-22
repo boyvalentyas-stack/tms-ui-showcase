@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TMS — Transaction Maintenance System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1F5; --surface:#FFFFFF; --ink:#101B33; --ink-soft:#5A6479; --border:#DCE1E9;
+  --brand:#1F3864; --brand-light:#2E5395; --accent:#0F6B66;
+  --ok:#1E7A46; --ok-bg:#E4F4EA; --warn:#A9640F; --warn-bg:#FBF0DC; --bad:#B23A3A; --bad-bg:#FBE8E8;
+  --sans:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',monospace;
+  --r:5px;
+}
+:root:not([data-theme="light"]){ }
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){ --bg:#0E1420; --surface:#161E2E; --ink:#EAEEF6; --ink-soft:#93A0B8; --border:#283249; }
+}
+:root[data-theme="dark"]{ --bg:#0E1420; --surface:#161E2E; --ink:#EAEEF6; --ink-soft:#93A0B8; --border:#283249; }
+*{box-sizing:border-box;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--ink);
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+h1,h2,h3{margin:0;font-weight:600;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+::selection{background:var(--brand-light);color:#fff;}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+/* ---------- Login ---------- */
+#login{min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr;}
+@media(max-width:760px){#login{grid-template-columns:1fr;}#login-hero{min-height:220px;}}
+#login-hero{background:linear-gradient(165deg,var(--brand) 0%,#132646 100%);position:relative;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:flex-end;padding:48px;color:#fff;}
+#login-hero::before{content:"";position:absolute;inset:0;
+  background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 1px,transparent 1px 42px),
+  repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 42px);}
+#login-hero .mark{font-family:var(--mono);font-size:14px;letter-spacing:.04em;opacity:.85;position:relative;}
+#login-hero h1{font-size:clamp(28px,4vw,40px);line-height:1.15;margin:18px 0 10px;position:relative;max-width:9ch;}
+#login-hero p{max-width:34ch;color:#C9D3E6;font-size:15px;line-height:1.5;position:relative;}
+#login-form-wrap{display:flex;align-items:center;justify-content:center;padding:32px;}
+.login-card{width:100%;max-width:360px;}
+.login-card h2{font-size:20px;margin-bottom:6px;}
+.login-card p.sub{color:var(--ink-soft);font-size:13.5px;margin:0 0 24px;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+.field input,.field select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);
+  background:var(--surface);color:var(--ink);font-size:14.5px;}
+.field input:focus,.field select:focus{border-color:var(--accent);}
+.btn{border:none;border-radius:var(--r);padding:11px 18px;font-size:14.5px;font-weight:600;}
+.btn-primary{background:var(--brand);color:#fff;width:100%;}
+.btn-primary:hover{background:var(--brand-light);}
+.role-hint{font-size:12px;color:var(--ink-soft);margin-top:10px;line-height:1.5;}
+
+/* ---------- App shell ---------- */
+#app{display:none;min-height:100vh;grid-template-columns:220px 1fr;grid-template-rows:56px 1fr;
+  grid-template-areas:"top top" "nav main";}
+#app.active{display:grid;}
+#topbar{grid-area:top;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 20px;
+  padding-top:env(safe-area-inset-top,0px);}
+#topbar .brand{font-weight:700;font-size:15px;letter-spacing:.01em;color:var(--brand);}
+#topbar .brand span{font-family:var(--mono);font-weight:500;color:var(--ink-soft);font-size:12.5px;margin-left:8px;}
+#topbar .who{display:flex;align-items:center;gap:10px;font-size:13px;}
+#topbar .who .role-badge{background:var(--brand);color:#fff;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;}
+#topbar .who button{background:none;border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;font-size:12.5px;color:var(--ink-soft);}
+#nav{grid-area:nav;background:var(--surface);border-right:1px solid var(--border);padding:16px 10px;}
+#nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;
+  padding:10px 12px;border-radius:var(--r);font-size:13.5px;color:var(--ink-soft);margin-bottom:2px;font-weight:500;}
+#nav button .dot{width:6px;height:6px;border-radius:50%;background:transparent;}
+#nav button.active{background:var(--bg);color:var(--brand);font-weight:600;}
+:root[data-theme="dark"] #nav button.active,
+@media (prefers-color-scheme:dark){#nav button.active{background:#1E2A40;}}
+#nav button:disabled{opacity:.38;cursor:not-allowed;}
+#nav .grp-label{font-size:10.5px;color:var(--ink-soft);text-transform:none;padding:14px 12px 6px;font-weight:600;}
+#main{grid-area:main;padding:24px 28px 60px;overflow-x:hidden;}
+.screen{display:none;}
+.screen.active{display:block;}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:18px;}
+.page-head h2{font-size:19px;}
+.page-head p{color:var(--ink-soft);font-size:13.5px;margin:4px 0 0;}
+
+/* ---------- shared components ---------- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;}
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;}
+.stat .n{font-family:var(--mono);font-size:22px;font-weight:600;}
+.stat .l{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px;}
+.badge.ok{background:var(--ok-bg);color:var(--ok);} .badge.warn{background:var(--warn-bg);color:var(--warn);}
+.badge.bad{background:var(--bad-bg);color:var(--bad);}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r);}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px;}
+th{text-align:left;font-size:11.5px;color:var(--ink-soft);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg);white-space:nowrap;}
+td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+td.num,th.num{font-family:var(--mono);text-align:right;}
+.btn-sm{background:none;border:1px solid var(--border);padding:5px 10px;border-radius:var(--r);font-size:12px;color:var(--ink-soft);white-space:nowrap;}
+.btn-sm:hover{border-color:var(--brand-light);color:var(--brand-light);}
+.btn-brand{background:var(--brand);color:#fff;border:none;padding:9px 16px;border-radius:var(--r);font-size:13.5px;font-weight:600;}
+.btn-brand:hover{background:var(--brand-light);}
+.btn-ghost{background:none;border:1px solid var(--border);padding:9px 16px;border-radius:var(--r);font-size:13.5px;font-weight:600;color:var(--ink);}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px;}
+.filters .field{margin:0;}
+.mono{font-family:var(--mono);}
+.masked{letter-spacing:.06em;color:var(--ink-soft);}
+.note{font-size:12.5px;color:var(--ink-soft);margin-top:10px;}
+.section-title{font-size:14px;font-weight:600;margin:22px 0 10px;}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+.pill-toggle{display:flex;border:1px solid var(--border);border-radius:20px;overflow:hidden;font-size:12.5px;}
+.pill-toggle button{border:none;background:none;padding:6px 13px;color:var(--ink-soft);}
+.pill-toggle button.active{background:var(--brand);color:#fff;}
+.empty{text-align:center;padding:40px 20px;color:var(--ink-soft);font-size:13.5px;}
+.recon-box{display:flex;gap:20px;flex-wrap:wrap;background:var(--ok-bg);border:1px solid var(--ok);border-radius:var(--r);padding:14px 16px;margin:14px 0;}
+.recon-box.bad{background:var(--bad-bg);border-color:var(--bad);}
+.recon-box div{font-size:12.5px;}
+.recon-box b{display:block;font-family:var(--mono);font-size:16px;}
+@media(max-width:820px){
+  #app{grid-template-columns:1fr;grid-template-areas:"top" "main" "nav";}
+  #nav{grid-area:nav;position:sticky;bottom:0;display:flex;overflow-x:auto;padding:8px;border-top:1px solid var(--border);border-right:none;gap:4px;
+    padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));}
+  #nav .grp-label{display:none;}
+  #nav button{flex-direction:column;gap:2px;flex:1 0 auto;text-align:center;font-size:11px;padding:8px 6px;}
+  #main{padding:16px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<section id="login">
+  <div id="login-hero">
+    <div class="mark">TMS · CASH CONTROL</div>
+    <h1>Every channel, one ledger.</h1>
+    <p>Transaction Maintenance System consolidates daily activity from every bank channel into one reconciled, audit-ready record.</p>
+  </div>
+  <div id="login-form-wrap">
+    <div class="login-card">
+      <h2>Sign in</h2>
+      <p class="sub">Access the transaction console for 21 Sep 2026 business date.</p>
+      <div class="field"><label for="u">Username</label><input id="u" value="b.valentyas" placeholder="Username"></div>
+      <div class="field"><label for="p">Password</label><input id="p" type="password" value="••••••••" placeholder="Password"></div>
+      <div class="field"><label for="role">Sign in as</label>
+        <select id="role">
+          <option value="admin">IT Admin</option>
+          <option value="maker" selected>Business User (Maker)</option>
+          <option value="checker">Business Approver (Checker)</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="login()">Sign in</button>
+      <p class="role-hint">This showcase switches the console's navigation, permissions and data masking based on the role picked here — try each one.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ APP SHELL ============ -->
+<div id="app">
+  <div id="topbar">
+    <div class="brand">TMS <span>Business date · 21 Sep 2026</span></div>
+    <div class="who">
+      <span class="role-badge" id="roleBadge">MAKER</span>
+      <span id="whoName">b.valentyas</span>
+      <button onclick="logout()">Sign out</button>
+    </div>
+  </div>
+  <nav id="nav">
+    <div class="grp-label">Monitor</div>
+    <button data-screen="dash" data-roles="admin" onclick="go('dash')">Job Monitoring</button>
+    <div class="grp-label">Operate</div>
+    <button data-screen="inquiry" data-roles="admin,maker,checker" onclick="go('inquiry')">Transaction Inquiry</button>
+    <button data-screen="report" data-roles="maker,checker" onclick="go('report')">Report &amp; Approval</button>
+    <div class="grp-label">Administer</div>
+    <button data-screen="users" data-roles="admin" onclick="go('users')">User Management</button>
+  </nav>
+
+  <main id="main">
+
+    <!-- Screen 2: Job Monitoring Dashboard -->
+    <section class="screen" id="screen-dash">
+      <div class="page-head">
+        <div><h2>Job Monitoring Dashboard</h2><p>Nightly ingestion status for business date 21 Sep 2026</p></div>
+        <span class="badge warn" id="overallBadge">1 channel needs attention</span>
+      </div>
+      <div class="grid-cards">
+        <div class="stat"><div class="n">6</div><div class="l">Sources configured</div></div>
+        <div class="stat"><div class="n">5</div><div class="l">Received on time</div></div>
+        <div class="stat"><div class="n mono">05:42</div><div class="l">Batch completion (SLA 06:00)</div></div>
+        <div class="stat"><div class="n mono">3,214,880</div><div class="l">Transactions processed</div></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Source</th><th>Expected</th><th>Received</th><th>Status</th><th class="num">Records</th><th class="num">Amount (IDR)</th><th>Action</th></tr></thead>
+          <tbody id="dashBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Screen 3: Transaction Inquiry -->
+    <section class="screen" id="screen-inquiry">
+      <div class="page-head">
+        <div><h2>Transaction Inquiry</h2><p>Search and filter processed transactions for the selected business date</p></div>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="filters">
+          <div class="field"><label>Channel</label>
+            <select id="fChannel"><option value="">All channels</option><option>Core Banking</option><option>ATM/EDC</option><option>Internet Banking</option><option>Mobile Banking</option><option>RTGS</option><option>BI-FAST</option></select></div>
+          <div class="field"><label>Type</label>
+            <select id="fType"><option value="">All types</option><option>Debit</option><option>Credit</option><option>Reversal</option></select></div>
+          <div class="field"><label>Min amount</label><input id="fMin" type="number" placeholder="0"></div>
+          <div class="field"><label>Max amount</label><input id="fMax" type="number" placeholder="No limit"></div>
+        </div>
+        <button class="btn-brand" onclick="renderTx()">Search</button>
+        <button class="btn-ghost" onclick="resetTx()">Reset</button>
+        <span class="note" id="unmaskNote" style="margin-left:8px;"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Time</th><th>Channel</th><th>Account</th><th>Type</th><th class="num">Amount (IDR)</th><th>Status</th></tr></thead>
+          <tbody id="txBody"></tbody>
+        </table>
+      </div>
+      <p class="note" id="txCount"></p>
+    </section>
+
+    <!-- Screen 4: Report Generation & Approval -->
+    <section class="screen" id="screen-report">
+      <div class="page-head">
+        <div><h2>Report &amp; Approval</h2><p>Generate the daily report, then release it under maker-checker control</p></div>
+      </div>
+
+      <div id="makerPane">
+        <div class="card">
+          <div class="filters" style="grid-template-columns:1fr 1fr auto;">
+            <div class="field"><label>Report type</label>
+              <select id="rType"><option>Internal (Excel)</option><option>Regulator (Fixed layout)</option></select></div>
+            <div class="field"><label>Business date</label><input type="date" value="2026-09-21"></div>
+            <div style="align-self:end;"><button class="btn-brand" onclick="generateReport()">Generate</button></div>
+          </div>
+          <div id="reconResult"></div>
+        </div>
+      </div>
+
+      <div class="section-title">Pending approval</div>
+      <div class="table-wrap"><table><thead><tr><th>Report</th><th>Type</th><th>Submitted by</th><th>Reconciliation</th><th>Action</th></tr></thead><tbody id="pendingBody"></tbody></table></div>
+
+      <div class="section-title">Released</div>
+      <div class="table-wrap"><table><thead><tr><th>Report</th><th>Type</th><th>Approved by</th><th>Released at</th></tr></thead><tbody id="releasedBody"></tbody></table></div>
+    </section>
+
+    <!-- Screen 5: User Management -->
+    <section class="screen" id="screen-users">
+      <div class="page-head">
+        <div><h2>User &amp; Role Management</h2><p>IT Admin controls access to the TMS console</p></div>
+        <button class="btn-brand" onclick="toggleAddUser()">+ Add user</button>
+      </div>
+      <div class="card" id="addUserForm" style="display:none;margin-bottom:16px;">
+        <div class="filters">
+          <div class="field"><label>Full name</label><input id="nuName" placeholder="e.g. Sari Wulandari"></div>
+          <div class="field"><label>Username</label><input id="nuUser" placeholder="e.g. s.wulandari"></div>
+          <div class="field"><label>Role</label><select id="nuRole"><option>IT Admin</option><option>Business Maker</option><option>Business Approver</option></select></div>
+        </div>
+        <button class="btn-brand" onclick="addUser()">Save user</button>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Username</th><th>Full name</th><th>Role</th><th>Status</th><th>Last login</th><th>Action</th></tr></thead><tbody id="usersBody"></tbody></table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+const state = { role: 'maker' };
+
+const SOURCES = [
+  {name:'Core Banking System', exp:'22:30', rec:'22:41', status:'ok', rows:1240110, amt:'482,110,300,000'},
+  {name:'ATM / EDC Switch', exp:'23:00', rec:'23:12', status:'ok', rows:812440, amt:'96,442,190,000'},
+  {name:'Internet Banking', exp:'23:30', rec:'23:35', status:'ok', rows:540220, amt:'210,884,500,000'},
+  {name:'Mobile Banking', exp:'23:30', rec:'23:44', status:'ok', rows:601330, amt:'188,220,900,000'},
+  {name:'RTGS', exp:'00:30', rec:'—', status:'bad', rows:0, amt:'—'},
+  {name:'SKNBI / BI-FAST', exp:'01:00', rec:'01:04', status:'ok', rows:20780, amt:'64,010,200,000'},
+];
+
+function renderDash(){
+  document.getElementById('dashBody').innerHTML = SOURCES.map((s,i)=>{
+    const badge = s.status==='ok' ? '<span class="badge ok">Received</span>' : s.status==='warn' ? '<span class="badge warn">Delayed</span>' : '<span class="badge bad">Missing</span>';
+    const action = s.status==='bad' ? `<button class="btn-sm" onclick="rerun(${i})">Re-run</button>` : `<button class="btn-sm" onclick="alert('Log for ${s.name}: ingestion completed, 0 validation errors.')">View log</button>`;
+    return `<tr id="row-${i}"><td>${s.name}</td><td class="mono">${s.exp}</td><td class="mono">${s.rec}</td><td>${badge}</td><td class="num">${s.rows?s.rows.toLocaleString():'—'}</td><td class="num">${s.amt}</td><td>${action}</td></tr>`;
+  }).join('');
+  const missing = SOURCES.filter(s=>s.status!=='ok').length;
+  document.getElementById('overallBadge').outerHTML = missing
+    ? `<span class="badge warn" id="overallBadge">${missing} channel${missing>1?'s':''} need attention</span>`
+    : `<span class="badge ok" id="overallBadge">All channels reconciled</span>`;
+}
+function rerun(i){
+  SOURCES[i].status='warn';
+  document.getElementById('dashBody').outerHTML='';
+  renderDash();
+  setTimeout(()=>{ SOURCES[i].status='ok'; SOURCES[i].rec='02:41'; SOURCES[i].rows=118400; SOURCES[i].amt='41,900,000,000'; renderDash(); }, 1400);
+}
+
+const TX = [
+  {t:'22:41:03', ch:'Core Banking', acc:'1020394857', type:'Debit', amt:'4,500,000', st:'Posted'},
+  {t:'22:41:09', ch:'Core Banking', acc:'1020118820', type:'Credit', amt:'12,000,000', st:'Posted'},
+  {t:'23:12:44', ch:'ATM/EDC', acc:'5510239944', type:'Debit', amt:'1,500,000', st:'Posted'},
+  {t:'23:14:02', ch:'Internet Banking', acc:'2209837465', type:'Credit', amt:'87,250,000', st:'Posted'},
+  {t:'23:35:51', ch:'Internet Banking', acc:'2200192837', type:'Reversal', amt:'2,000,000', st:'Reviewed'},
+  {t:'23:44:18', ch:'Mobile Banking', acc:'3391029384', type:'Debit', amt:'620,000', st:'Posted'},
+  {t:'00:02:09', ch:'RTGS', acc:'7712093844', type:'Credit', amt:'450,000,000', st:'Posted'},
+  {t:'01:04:33', ch:'BI-FAST', acc:'6603221190', type:'Debit', amt:'9,750,000', st:'Posted'},
+];
+function mask(acc){ return state.role==='checker' ? acc : acc.slice(0,4)+'••••'+acc.slice(-2); }
+function renderTx(){
+  const ch=document.getElementById('fChannel').value, ty=document.getElementById('fType').value;
+  const min=+document.getElementById('fMin').value||0, max=+document.getElementById('fMax').value||Infinity;
+  const rows = TX.filter(r=>{
+    const n=+r.amt.replace(/,/g,'');
+    return (!ch||r.ch===ch)&&(!ty||r.type===ty)&&n>=min&&n<=max;
+  });
+  document.getElementById('txBody').innerHTML = rows.length ? rows.map(r=>
+    `<tr><td class="mono">${r.t}</td><td>${r.ch}</td><td class="mono ${state.role!=='checker'?'masked':''}">${mask(r.acc)}</td><td>${r.type}</td><td class="num">${r.amt}</td><td><span class="badge ${r.st==='Posted'?'ok':'warn'}">${r.st}</span></td></tr>`
+  ).join('') : `<tr><td colspan="6"><div class="empty">No transactions match these filters.</div></td></tr>`;
+  document.getElementById('txCount').textContent = `${rows.length} of ${TX.length} transactions shown for 21 Sep 2026.`;
+  document.getElementById('unmaskNote').textContent = state.role==='checker' ? 'Full account numbers visible — Approver role.' : 'Account numbers masked for your role.';
+}
+function resetTx(){ document.getElementById('fChannel').value=''; document.getElementById('fType').value=''; document.getElementById('fMin').value=''; document.getElementById('fMax').value=''; renderTx(); }
+
+let pending=[], released=[], reportSeq=1;
+function generateReport(){
+  const type=document.getElementById('rType').value;
+  const matched = type.startsWith('Internal') || Math.random() > 0.001; // demo: RTGS gap shown as mismatch if regulator picked while a source is missing
+  const stillMissing = SOURCES.some(s=>s.status==='bad');
+  const ok = type.startsWith('Internal') || !stillMissing;
+  document.getElementById('reconResult').innerHTML = ok
+    ? `<div class="recon-box"><div>Source total<b>3,214,880</b></div><div>Accumulated total<b>3,214,880</b></div><div>Variance<b>0</b></div></div>
+       <button class="btn-brand" onclick="submitReport('${type}')">Submit for approval</button>`
+    : `<div class="recon-box bad"><div>Source total<b>3,214,880</b></div><div>Accumulated total<b>2,974,100</b></div><div>Variance<b>240,780</b></div></div>
+       <p class="note">RTGS has not reported for this business date. A Regulator report cannot be submitted until reconciliation is resolved — go to Job Monitoring and re-run the missing source.</p>`;
+}
+function submitReport(type){
+  const id = 'RPT-' + String(reportSeq++).padStart(3,'0');
+  pending.push({id, type, by: state.user});
+  document.getElementById('reconResult').innerHTML = `<p class="note">Report ${id} submitted and is awaiting Approver review.</p>`;
+  renderReports();
+}
+function decide(i, approve){
+  const r = pending[i];
+  if(approve){
+    released.unshift({...r, approver: state.user, at: new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})});
+    pending.splice(i,1);
+  } else {
+    const reason = prompt('Reason for rejection (required):');
+    if(!reason) return;
+    pending.splice(i,1);
+  }
+  renderReports();
+}
+function renderReports(){
+  document.getElementById('pendingBody').innerHTML = pending.length ? pending.map((r,i)=>`
+    <tr><td class="mono">${r.id}</td><td>${r.type}</td><td>${r.by}</td><td><span class="badge ok">Matched</span></td>
+    <td>${state.role==='checker' ? `<button class="btn-sm" onclick="decide(${i},true)">Approve</button> <button class="btn-sm" onclick="decide(${i},false)">Reject</button>` : '<span class="note">Awaiting Approver</span>'}</td></tr>`).join('')
+    : `<tr><td colspan="5"><div class="empty">Nothing pending approval.</div></td></tr>`;
+  document.getElementById('releasedBody').innerHTML = released.length ? released.map(r=>
+    `<tr><td class="mono">${r.id}</td><td>${r.type}</td><td>${r.approver}</td><td class="mono">${r.at}</td></tr>`).join('')
+    : `<tr><td colspan="4"><div class="empty">No reports released yet today.</div></td></tr>`;
+}
+
+let USERS = [
+  {u:'b.valentyas', n:'Boy Valentyas Indra G', r:'Business Maker', st:'Active', last:'21 Sep, 07:12'},
+  {u:'r.hartono', n:'Rudi Hartono', r:'IT Admin', st:'Active', last:'21 Sep, 06:40'},
+  {u:'a.kusuma', n:'Aisyah Kusuma', r:'Business Approver', st:'Active', last:'20 Sep, 18:02'},
+  {u:'d.pratama', n:'Dimas Pratama', r:'IT Admin', st:'Inactive', last:'02 Aug, 09:15'},
+];
+function renderUsers(){
+  document.getElementById('usersBody').innerHTML = USERS.map((u,i)=>`
+    <tr><td class="mono">${u.u}</td><td>${u.n}</td><td>${u.r}</td><td><span class="badge ${u.st==='Active'?'ok':'bad'}">${u.st}</span></td><td class="mono">${u.last}</td>
+    <td><button class="btn-sm" onclick="toggleUser(${i})">${u.st==='Active'?'Deactivate':'Activate'}</button></td></tr>`).join('');
+}
+function toggleUser(i){ USERS[i].st = USERS[i].st==='Active'?'Inactive':'Active'; renderUsers(); }
+function toggleAddUser(){ const f=document.getElementById('addUserForm'); f.style.display = f.style.display==='none'?'block':'none'; }
+function addUser(){
+  const n=document.getElementById('nuName').value.trim(), u=document.getElementById('nuUser').value.trim(), r=document.getElementById('nuRole').value;
+  if(!n||!u) return alert('Full name and username are required.');
+  USERS.unshift({u, n, r, st:'Active', last:'—'});
+  renderUsers(); toggleAddUser();
+  document.getElementById('nuName').value=''; document.getElementById('nuUser').value='';
+}
+
+const ROLE_LABEL = {admin:'IT ADMIN', maker:'MAKER', checker:'APPROVER'};
+const ROLE_HOME = {admin:'dash', maker:'inquiry', checker:'report'};
+function login(){
+  state.role = document.getElementById('role').value;
+  state.user = document.getElementById('u').value || 'user';
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').classList.add('active');
+  document.getElementById('roleBadge').textContent = ROLE_LABEL[state.role];
+  document.getElementById('whoName').textContent = state.user;
+  document.querySelectorAll('#nav button').forEach(b=>{
+    b.disabled = !b.dataset.roles.split(',').includes(state.role);
+  });
+  document.getElementById('makerPane').style.display = state.role==='checker' ? 'none' : 'block';
+  renderDash(); renderTx(); renderReports(); renderUsers();
+  go(ROLE_HOME[state.role]);
+}
+function logout(){ document.getElementById('app').classList.remove('active'); document.getElementById('login').style.display='grid'; }
+function go(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active', b.dataset.screen===name));
+}
+</script>
+</body>
+</html>
