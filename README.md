@@ -4,7 +4,7 @@ A functional, responsive front-end prototype of a bank back-office console for c
 
 Built as the UI design companion to a Business Analyst / QC case study for a **New Cash Control System**.
 
-**🔗 Live demo:** `https://<your-username>.github.io/tms-ui-showcase/` *(update once GitHub Pages is enabled)*
+**🔗 Live demo:** `https://boyvaelntyas-stack.github.io/tms-ui-showcase/` *(update once GitHub Pages is enabled)*
 
 ---
 
